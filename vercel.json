@@ -1,5 +1,5 @@
 {
   "routes": [
-    { "src": "/logger.html", "dest": "/logger.html" }
+    { "src": "/(.*)", "dest": "/$1", "headers": { "cache-control": "public, max-age=0, must-revalidate" } }
   ]
 }
