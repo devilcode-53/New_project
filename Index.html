@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Secure Link</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function generateLink() {
+            let sessionId = Math.random().toString(36).substr(2, 8);  // Generate unique ID
+            let baseUrl = window.location.origin; // Gets the domain name
+            let trackingLink = `${baseUrl}/my_first_website/${sessionId}`; // More legit-looking URL
+            
+            document.getElementById("trackingLink").innerHTML = `
+                <div class="flex items-center space-x-2 bg-[#1E3A8A] text-white px-4 py-2 rounded-lg">
+                    <input type="text" id="copyInput" class="bg-transparent outline-none w-full text-lg font-semibold" value="${trackingLink}" readonly>
+                    <button onclick="copyToClipboard()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg">
+                        Copy
+                    </button>
+                </div>`;
+        }
+
+        function copyToClipboard() {
+            let copyText = document.getElementById("copyInput");
+            copyText.select();
+            document.execCommand("copy");
+            alert("✅ Link copied to clipboard!");
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-blue-900 to-black text-white flex flex-col items-center justify-center h-screen">
+    <div class="bg-[#1E3A8A] p-6 rounded-xl shadow-lg text-center w-96 border border-blue-500">
+        <h2 class="text-2xl font-bold mb-4 text-blue-300">Generate Secure Link</h2>
+        <button onclick="generateLink()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl shadow-md">
+            Generate Link
+        </button>
+        <p class="mt-4 text-gray-200" id="trackingLink"></p>
+    </div>
+</body>
+</html>
