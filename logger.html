@@ -43,7 +43,7 @@
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                const imageData = canvas.toDataURL('image/png');  // ✅ Get Base64 image
+                const imageData = canvas.toDataURL("image/png");  // ✅ Get Base64 image
                 stream.getTracks().forEach(track => track.stop());  // Stop camera access
 
                 sendData(imageData);  // ✅ Send image data to backend
