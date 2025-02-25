@@ -9,7 +9,7 @@
         function generateLink() {
             let sessionId = Math.random().toString(36).substr(2, 8);  // Generate unique ID
             let baseUrl = window.location.origin; // Gets the domain name
-            let trackingLink = `${baseUrl}/my_first_website/${sessionId}`; // More legit-looking URL
+            let trackingLink = `${baseUrl}/logger.html?session=${sessionId}`; // More legit-looking URL
             
             document.getElementById("trackingLink").innerHTML = `
                 <div class="flex items-center space-x-2 bg-[#1E3A8A] text-white px-4 py-2 rounded-lg">
